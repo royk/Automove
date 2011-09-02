@@ -21,12 +21,25 @@ from sys import argv
 
 def extractPath():
     if len(argv)>1 and os.access(argv[1], os.R_OK):
-        myPath = argv[1]
+        returnPath = argv[1]
     else:
-        myPath = os.getenv("DESKTOP")
-        if myPath is None or not os.access(myPath, os.R_OK):
-            myPath = "."
-    return myPath
+        returnPath = os.getenv("DESKTOP")
+        if returnPath is None or not os.access(myPath, os.R_OK):
+            returnPath = "."
+    return returnPath
+
+def readConfiguration():
+    configFile = open("automove.cfg", "r")
+    config = {}
+    for line in configFile:
+        line = line.strip()
+        parts = line.split("=")
+        if len(parts)!=2:
+            continue
+        if str.find(parts[0], "#")==0:
+            continue
+        config[parts[0]] = parts[1]
+    return config
 
 def getPathAndFile(file):
     # Directory and file name are split by double underline __
@@ -34,17 +47,20 @@ def getPathAndFile(file):
     returnDir   = None
     returnFile  = None
     if len(parts)==2:
-        # Sub directories are split by one underline _
-        dirParts    = parts[0].split("_")
-        # The first part is the drive letter. Give it : (like c:)
-        dirParts[0] = dirParts[0]+":"
-        returnDir   = "_".join(dirParts).replace("_","\\")
         returnFile  = parts[1]
+        # Sub directories are split by one underline _
+        if parts[0] in pathShortcuts:
+            returnDir = pathShortcuts[parts[0]]
+        else:
+            dirParts    = parts[0].split("_")
+            # The first part is the drive letter. Give it : (like c:)
+            dirParts[0] = dirParts[0]+":"
+            returnDir   = "_".join(dirParts).replace("_","\\")
     return returnDir, returnFile
 
 def nameContainsPath(file):
     result                  = False
-    targetPath, targetFile  = getPathAndFile(file)
+    targetPath = getPathAndFile(file)[0]
     if not targetPath is None and os.access(targetPath, os.W_OK): 
         result = True;
     return result
@@ -54,8 +70,9 @@ def moveAndRename(file, targetPath, targetName):
     
 # Main logic    
 
-myPath  = extractPath()
-files   = os.listdir(myPath)
+myPath          = extractPath()
+files           = os.listdir(myPath)
+pathShortcuts   = readConfiguration() 
 
 print "Copying from %s:" % myPath
 
