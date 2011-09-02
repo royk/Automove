@@ -24,7 +24,7 @@ def extractPath():
         returnPath = argv[1]
     else:
         returnPath = os.getenv("DESKTOP")
-        if returnPath is None or not os.access(myPath, os.R_OK):
+        if returnPath is None or not os.access(returnPath, os.R_OK):
             returnPath = "."
     return returnPath
 
